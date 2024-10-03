@@ -1,0 +1,82 @@
+---
+title: "Estimating Statewise Respondants in the 2022 ACS"
+author: Viet Nguyen, Yihang Xu, Doran Wang
+Date: October 3, 2024
+format: pdf
+editor: visual
+---
+
+## Introduction
+
+With a particular focus on people whose greatest educational attainment is a doctorate, the goal of this analysis is to estimate the total number of respondents in each U.S. state from the 2022 American Community Survey (ACS) using a ratio estimator approach. Based on a sample of respondents from each state, the ACS offers insightful information about the social, economic, housing, and demographic aspects of the American people. However, we estimate these totals using a ratio-based method, rather than having the exact respondent counts available for all states.
+
+The ratio estimator technique implies that there is a consistent link between the number of individuals with PhD degrees and the total number of respondents across different states. We compute a ratio based on the number of people in California who hold doctorates, using the actual number of respondents (391,171) as a point of reference. We then use this ratio to calculate the total number of responders in other states by taking into account the number of people who hold doctorates in each state.
+
+## Instructions on obtaining data
+
+1.  Create an account on IPUMS USA
+2.  Select the 2022 ACS dataset in sample selections
+3.  In the select variables, these are included:
+    -   STATEICP
+    -   SEX
+    -   EDUC
+4.  Submit data extract, then download the csv file once the extract is processed.
+
+# Ratio Estimators Approach
+
+We know that the total number of respondents in California is given by:
+
+$N_{\text{cal}} = 391171$
+
+Let $D_{\text{cal}}$ be the number of respondents in California with a doctoral degree. The ratio for California is:
+
+$r = \frac{N_{\text{cal}}}{D_{\text{cal}}}$
+
+To estimate the total number of respondents for any other state i, we use the number of doctoral degree holders $D_i$ and apply the ratio:
+
+$\hat{N}_i = r \times D_i$
+
+Where: - $\hat{N}_i$ is the estimated total number of respondents in state i, - $D_i$ is the number of doctoral degree holders in state i.
+
+## Running Code
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(dplyr)
+data <- read.csv("/Users/nguyenviet/Desktop/STA304/USA_00002.csv")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+# Filter doctoral degree
+doctoral_by_state <- data %>% filter(EDUCD == 116) %>% group_by(STATEICP) %>% summarise(doctoral_count = n())
+
+# Total number of respondents in California
+n <- 391171
+
+# Number of doctoral degree in California
+doctoral_california <- doctoral_by_state %>% filter(STATEICP == 71)
+
+# Calculate the ratio for California
+ratio <- n/doctoral_california$doctoral_count
+
+actual_respondents <- data %>% group_by(STATEICP) %>% summarise(actual_total = n())
+
+# Apply the ratio to estimate total respondents in each state
+estimated_total_by_state <- doctoral_by_state %>%
+  mutate(estimated_total = ratio * doctoral_by_state$doctoral_count)
+
+print(estimated_total_by_state)
+head(actual_respondents)
+```
+
+## Discussions
+
+Although the ratio estimator offers a handy method for estimating population sizes, it is predicated on the idea that the proportion of Californians with doctorates to the state's overall population is typical of other states. This assumption does not always hold true in practice, as evidenced by variations in state-specific legislation, educational systems, and demography. As a result, there are disparities between the estimated and actual number of respondents among states.
+
+These variances underline the need of addressing geographical variations and employing more advanced modeling methodologies when producing population estimates based on specific demographic categories.
